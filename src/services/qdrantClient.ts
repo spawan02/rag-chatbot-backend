@@ -2,7 +2,7 @@ import { QdrantClient } from "@qdrant/js-client-rest";
 import { Passage } from "../types/passage";
 import { QDRANT_URL, QDRANT_API_KEY } from "../config";
 
-const collectionName = "news_1";
+const collectionName = "news";
 
 function createClient() {
     return new QdrantClient({

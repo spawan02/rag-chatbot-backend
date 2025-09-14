@@ -7,6 +7,12 @@ import { searchCollection } from "../services/qdrantClient";
 
 const router = express.Router();
 
+router.get("/health", (req, res) => {
+    res.json({
+        message: "server is healthy",
+    });
+});
+
 router.post("/start-session", async (req, res) => {
     try {
         const redisClient = await getRedisClient();
@@ -59,7 +65,20 @@ router.post("/chat", async (req, res) => {
                 .json({ error: "Missing sessionId or query" });
 
         const redisClient = await getRedisClient();
+        const cacheKey = `cache:query:${query}`;
+        const cachedAnswer = await redisClient.get(cacheKey);
+        if (cachedAnswer) {
+            const answer = JSON.parse(cachedAnswer);
+            let history = JSON.parse(
+                (await redisClient.get(sessionId)) || "[]"
+            );
+            history.push({ query, answer });
+            await redisClient.set(sessionId, JSON.stringify(history));
+            await redisClient.expire(sessionId, 3600);
 
+            res.json({ answer });
+            return;
+        }
         const queryEmbeddingArr = await embedText([query]);
         const queryEmbedding = queryEmbeddingArr[0];
         if (queryEmbedding.length === 0)
@@ -85,7 +104,7 @@ router.post("/chat", async (req, res) => {
 
         const result = await model.generateContent(prompt);
         const answer = result.response.text();
-
+        await redisClient.set(cacheKey, JSON.stringify(answer), { EX: 300 });
         let history = JSON.parse((await redisClient.get(sessionId)) || "[]");
         history.push({ query, answer });
 
