@@ -9,3 +9,6 @@ export const REDIS_HOSTNAME = process.env.REDISHOSTNAME;
 export const REDIS_PASSWORD = process.env.REDISACCESSKEYS;
 export const PORT = process.env.PORT ?? 8000;
 export const REDIS_PORT = 6380;
+export const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
+    : [];

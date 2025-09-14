@@ -1,11 +1,21 @@
 import express from "express";
 import chatRoutes from "./routes/chat";
-import { PORT } from "./config";
+import { ALLOWED_ORIGINS, PORT } from "./config";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
+
 
 app.use(rateLimit({
   windowMs: 15 * 60 * 1000, 
