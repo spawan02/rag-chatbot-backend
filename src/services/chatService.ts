@@ -3,6 +3,8 @@ import { getRedisClient } from "./redisClient";
 import { embedText } from "./embedder";
 import { model } from "./genAI";
 import { searchCollection } from "./qdrantClient";
+import { validateSessionId } from "../utils/validateSession";
+import { BadRequestError } from "../utils/badRequestError";
 
 const SESSION_TTL = 3600;
 const CACHE_TTL = 300;
@@ -17,12 +19,20 @@ export const createSession = async (): Promise<string> => {
 
 export const getHistory = async (sessionId: string): Promise<any[]> => {
     const redisClient = await getRedisClient();
+    if (!(await validateSessionId(redisClient, sessionId))) {
+        throw new BadRequestError("Invalid session ID");
+    }
+
     const history = await redisClient.get(sessionId);
     return history ? JSON.parse(history) : [];
 };
 
 export const resetSession = async (sessionId: string): Promise<void> => {
     const redisClient = await getRedisClient();
+    if (!(await validateSessionId(redisClient, sessionId))) {
+        throw new BadRequestError("Invalid session ID");
+    }
+
     await redisClient.del(sessionId);
 };
 
@@ -31,6 +41,9 @@ export const processChat = async (
     query: string
 ): Promise<string> => {
     const redisClient = await getRedisClient();
+    if (!(await validateSessionId(redisClient, sessionId))) {
+        throw new BadRequestError("Invalid session ID");
+    }
     const cacheKey = `cache:query:${query}`;
     const cached = await redisClient.get(cacheKey);
 
